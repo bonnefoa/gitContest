@@ -80,49 +80,44 @@ trait GraphComponent{
         )
     }else links
   }
-
-  def sortLinks(links:NodeGraph):NodeGraph={
+  def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={
     def innerLoop(iter:Iterator[Node],links:NodeGraph):NodeGraph={
       if(iter.hasNext){
         val node = iter.next
-        innerLoop(iter,links.update(node,links(node).sort(_>_)))
+        innerLoop(iter,f(node,links))
       }
       else links
     }
     innerLoop(links.keys,links)
   }
 
-  def removeUselessLinks(links:NodeGraph):NodeGraph={
+  def sortLinks(links:NodeGraph):NodeGraph={
+    applyToMap(links, (node,links)=> links.update(node,links(node).sort(_>_)))
+  }
 
+  def removeUselessLinks(links:NodeGraph):NodeGraph={
+    applyToMap(links, (node,links)=> links.update(node,links(node).take(10)))
   }
 
   def scoreGraph(links:NodeGraph):NodeGraph={
-    def innerLoop(iter:Iterator[Node],links:NodeGraph):NodeGraph={
-      if(iter.hasNext){
-        val node=iter.next
-        innerLoop(iter, 
-          links.update(node,scoreLinks(node,links))
-        )
-    }
-    else links
+    applyToMap(links,(node,links)=> links.update(node,scoreLinks(node,links)))
   }
-  innerLoop(links.keys,links)
-}
 
-def scoreLinks(node:Node,map:NodeGraph):List[Link]={
-  map(node).flatMap(link=> Link(map(link.dest).size+link.score,link.dest) ::Nil)
-}
+  def scoreLinks(node:Node,map:NodeGraph):List[Link]={
+    map(node).flatMap(link=> Link(map(link.dest).size+link.score,link.dest) ::Nil)
+  }
 
-def readFile(file:String):Iterator[Data]={
-  DataParser.readFile(file).elements
-}
+  def readFile(file:String):Iterator[Data]={
+    DataParser.readFile(file).elements
+  }
 
-def initialiseGraph(file:String):Graph={
-  new Graph(
-    sortLinks(
-      scoreGraph(
-        parseDataToGraph(readFile(file), HashMap()
-        ))))
+  def initialiseGraph(file:String):Graph={
+    new Graph(
+      sortLinks(
+        removeUselessLinks(
+        scoreGraph(
+          parseDataToGraph(readFile(file), HashMap()
+          )))))
+      }
     }
   }
-}
