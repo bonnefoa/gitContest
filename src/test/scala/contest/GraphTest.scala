@@ -72,6 +72,12 @@ class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
         val mapPurged = Initialise.removeUselessLinks(HashMap(user1-> List.range(1, 20).map(Link(_,repo1))))
         mapPurged should contain value( List.range(1, 11).map(Link(_,repo1)) )
     }
+    it("should get the 10 best repos"){
+        val map = HashMap(user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2+1,RepoNode(a*2+1))))
+          val grap = new Graph(map)
+          val res = grap.getFirstBestRepos()
+          List.range(91,101).foreach(res should contain (_))
+    }
   }
   describe("Search the best candidates algorithm"){
     it("should find nothing if there is only first degree repos"){

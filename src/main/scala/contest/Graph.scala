@@ -33,6 +33,8 @@ trait GraphComponent{
 
   case class Graph(links:NodeGraph){
 
+    val tenBestRepo = getFirstBestRepos 
+
     def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)) }
 
     def getBestCandidates(userNode:UserNode):List[Int]={
@@ -61,7 +63,20 @@ trait GraphComponent{
         }
         innerLoop(userNode, Nil,Nil,Nil).take(10)
       }}
+      def getFirstBestRepos():List[Int]={
+        def innerLoop(iter:Iterator[List[Link]],res:TreeSet[Int]):TreeSet[Int]={
+          if(iter.hasNext){
+            val list = iter.next
+            if(res.lastKey > list(0).score) innerLoop(iter,res)
+              else{
+              list.takeWhile(_.score > res.lastKey).map(_.score).foldLeft(res)(_+_)
+            }
+          }else res
+        }
+        innerLoop(links.values,TreeSet[Int]()).toList
+      }
     }
+
 
     object Initialise{
 
@@ -80,6 +95,7 @@ trait GraphComponent{
         )
     }else links
   }
+
   def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={
     def innerLoop(iter:Iterator[Node],links:NodeGraph):NodeGraph={
       if(iter.hasNext){
@@ -115,9 +131,9 @@ trait GraphComponent{
     new Graph(
       sortLinks(
         removeUselessLinks(
-        scoreGraph(
-          parseDataToGraph(readFile(file), HashMap()
-          )))))
+          scoreGraph(
+            parseDataToGraph(readFile(file), HashMap()
+            )))))
+        }
       }
     }
-  }
