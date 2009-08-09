@@ -19,6 +19,9 @@ import scala.collection.immutable.HashMap
 import scala.collection.immutable.IntMap
 import scala.collection.immutable.TreeMap
 import scala.collection.immutable.Map
+import scala.collection.immutable.SortedSet
+import scala.collection.immutable.TreeSet
+import scala.collection.immutable.EmptySet
 
 import scala.io.Source
 import scala.collection.immutable.EmptyMap
@@ -29,19 +32,26 @@ trait GraphComponent{
 
   case class Graph(links:NodeGraph){
 
-    val tenBestRepo = getFirstBestRepos 
+    lazy val tenBestRepo = getFirstBestRepos 
+
+    def getBestCandidatesOrElse10Top(userId:Int):List[Int]={
+      val res = getBestCandidates(UserNode(userId))
+        if (res == Nil) tenBestRepo
+      else if(res.size < 10) (res:::tenBestRepo).sort(_>_).take(10)
+        else res
+    }
 
     def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)) }
 
     def getBestCandidates(userNode:UserNode):List[Int]={
-      if(!links.isDefinedAt(userNode)) Nil
+      if(!links.isDefinedAt(userNode)) Nil 
       else{
         val firstDegreeRepos=links(userNode).map(_.dest.id)
           def innerLoop(currentNode:Node,linkToVisit:List[Link],nodeVisited:List[Node],res:List[Int]):List[Int]={
           if(res.size >10)res
           else{
             val newNodeVisited=currentNode::nodeVisited
-            val newLinkToVisit= (linkToVisit:::links(currentNode)).remove((link)=>newNodeVisited.contains(link.dest) )
+            val newLinkToVisit= (linkToVisit:::links(currentNode).take(10)).remove((link)=>newNodeVisited.contains(link.dest) )
               if(newLinkToVisit==Nil)
               res
             else
@@ -56,41 +66,42 @@ trait GraphComponent{
           }
         }
         innerLoop(userNode, Nil,Nil,Nil).take(10)
-      }}
-
-      def getFirstBestRepos():List[Int]={
-        def innerLoop(iter:Iterator[List[Link]],res:List[Int] ):List[Int]={
-          if(iter.hasNext){
-            val list = iter.next
-            if(res.head > list(0).score) innerLoop(iter,res)
-              else{
-              innerLoop(iter,
-                (res:::
-                  (list.takeWhile(_.score > res.head).map(_.score))).sort(_<_).takeRight(10)
-              )
-          }
-        }else res
       }
-      innerLoop(links.values, List(0))
     }
+
+    def getFirstBestRepos():List[Int]={
+      def innerLoop(iter:Iterator[List[Link]],res:SortedSet[Link] ):SortedSet[Link]={
+        if(iter.hasNext){
+          val list = iter.next
+          val head = res.firstKey
+          if(head > list(0)) innerLoop(iter,res)
+            else{
+            innerLoop(iter,
+              TreeSet[Link]()++(res++list.takeWhile(_ > head)).toList.takeRight(10)
+            )
+        }
+      }else res
+    }
+    innerLoop(links.values, TreeSet[Link](Link(0,RepoNode(0)))).toList.map(_.dest.id)
   }
+}
 
-  object Initialise{
+object Initialise{
 
-    def parseDataToGraph(iter:Iterator[Data],links:NodeGraph):NodeGraph={
-      if (iter.hasNext){
-        val data=iter.next
-        val uNode=UserNode(data.dataId)
-          val rNode=RepoNode(data.repoId)
-          parseDataToGraph(  
-          iter,
-          links.update(rNode,
-            new Link(1,uNode)::links.getOrElse(rNode,Nil)).
-          update(uNode,
-            new Link(1,rNode)::links.getOrElse(uNode,Nil) 
-          )
-      )
-  }else links
+  def parseDataToGraph(iter:Iterator[Data],links:NodeGraph):NodeGraph={
+    if (iter.hasNext){
+      val data=iter.next
+      val uNode=UserNode(data.dataId)
+        val rNode=RepoNode(data.repoId)
+        parseDataToGraph(  
+        iter,
+        links.update(rNode,
+          new Link(1,uNode)::links.getOrElse(rNode,Nil)).
+        update(uNode,
+          new Link(1,rNode)::links.getOrElse(uNode,Nil) 
+        )
+    )
+}else links
 }
 
 def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={

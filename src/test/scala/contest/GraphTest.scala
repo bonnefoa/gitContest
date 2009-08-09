@@ -76,7 +76,19 @@ class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
         val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2+1,RepoNode(a*2+1))))
           val grap = new Graph(Initialise.sortLinks(map))
           val res = grap.getFirstBestRepos()
-          List.range(91,100).foreach(res should contain (_))
+          res should be((90 to 99).toList)
+    }
+    it("should not duplicate the best repos"){
+        val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))))
+          val grap = new Graph(Initialise.sortLinks(map))
+          val res = grap.getFirstBestRepos()
+          res should be ( (80 to 98 by 2).toList )
+    }
+    it("should get the repo id and not the score"){
+        val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a))))
+          val grap = new Graph(Initialise.sortLinks(map))
+          val res = grap.getFirstBestRepos()
+          res should be ( (40 to 49).toList)
     }
   }
   describe("Search the best candidates algorithm"){
