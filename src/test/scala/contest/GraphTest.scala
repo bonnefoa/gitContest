@@ -75,20 +75,21 @@ class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
     it("should get the 10 best repos"){
         val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2+1,RepoNode(a*2+1))))
           val grap = new Graph(Initialise.sortLinks(map))
-          val res = grap.getFirstBestRepos()
-          res should be((90 to 99).toList)
+          val res = grap.getFirstBestRepos().map(_.dest.id).toList
+          res should be((90 to 99).toList.reverse)
     }
     it("should not duplicate the best repos"){
         val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))))
           val grap = new Graph(Initialise.sortLinks(map))
-          val res = grap.getFirstBestRepos()
-          res should be ( (80 to 98 by 2).toList )
+          val res = grap.getFirstBestRepos().map(_.dest.id).toList
+          res should be ( (80 to 98 by 2).toList.reverse )
+
     }
     it("should get the repo id and not the score"){
         val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a))))
           val grap = new Graph(Initialise.sortLinks(map))
-          val res = grap.getFirstBestRepos()
-          res should be ( (40 to 49).toList)
+          val res = grap.getFirstBestRepos().map(_.dest.id).toList
+          res should be ( (40 to 49).toList.reverse)
     }
   }
   describe("Search the best candidates algorithm"){
@@ -112,8 +113,13 @@ class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
       graph.getBestCandidates(1) should be (List(2))
   }
   it("should find the repo on the third link"){
-
-  }
+  val graph=Initialise.initialiseGraph("thirdLink.txt")
+    graph.getBestCandidates(1) should be (List(2,3))
+}
+it("should get the best repos"){
+  val graph=Initialise.initialiseGraph("dataTest2.txt")
+    graph.getBestCandidates(1) should be ((15 to 25).toList)
+}
 }
 }
 
@@ -121,8 +127,14 @@ trait TestEnvironnement extends GraphComponent{
   val graph=new Graph(Initialise.parseDataToGraph(Initialise.readFile("dataTest.txt"),HashMap()))
     val user1 = new UserNode(1)
     val user2 = new UserNode(2)
+    val user3 = new UserNode(3)
     val repo1 = new RepoNode(1)
     val repo2 = new RepoNode(2)
+    val repo3 = new RepoNode(3)
+    val repo4 = new RepoNode(4)
+    val repo5 = new RepoNode(5)
+    val repo6 = new RepoNode(6)
+    val repo7 = new RepoNode(7)
 
     val mapRef= HashMap[Node,List[Link]](
     user1 -> List(Link(1,repo2),Link(1,repo1)),

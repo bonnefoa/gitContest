@@ -21,6 +21,7 @@ import scala.collection.immutable.TreeMap
 import scala.collection.immutable.Map
 import scala.collection.immutable.SortedSet
 import scala.collection.immutable.TreeSet
+import scala.collection.immutable.HashSet
 import scala.collection.immutable.EmptySet
 
 import scala.io.Source
@@ -36,40 +37,42 @@ trait GraphComponent{
 
     def getBestCandidatesOrElse10Top(userId:Int):List[Int]={
       val res = getBestCandidates(UserNode(userId))
-        if (res == Nil) tenBestRepo
-      else if(res.size < 10) (res:::tenBestRepo).sort(_>_).take(10)
-        else res
+        if (res.size==0) tenBestRepo.map(_.dest.id).toList
+      else if(res.size < 10) (res++tenBestRepo).map(_.dest.id).toList.takeRight(10)
+        else res.map(_.dest.id).toList.takeRight(10)
     }
 
-    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)) }
+    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).map(_.dest.id).toList }
 
-    def getBestCandidates(userNode:UserNode):List[Int]={
-      if(!links.isDefinedAt(userNode)) Nil 
-      else{
-        val firstDegreeRepos=links(userNode).map(_.dest.id)
-          def innerLoop(currentNode:Node,linkToVisit:List[Link],nodeVisited:List[Node],res:List[Int]):List[Int]={
-          if(res.size >10)res
+    def getBestCandidates(userNode:UserNode):List[Link]={
+      if(!links.isDefinedAt(userNode)) Nil
+        else{
+        val firstDegreeRepos=links(userNode)
+          def innerLoop(currentNode:Node,linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
+          res.removeDuplicates
+          res.sort(_<_)
+          if(res.size >10) res
           else{
             val newNodeVisited=currentNode::nodeVisited
-            val newLinkToVisit= (linkToVisit:::links(currentNode).take(10)).remove((link)=>newNodeVisited.contains(link.dest) )
-              if(newLinkToVisit==Nil)
-              res
-            else
+            val newLinkToVisit= (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
+              if(newLinkToVisit.size == 0) res
+            else{
+              val nextLink = newLinkToVisit.elements.next
               currentNode match {
-              case UserNode(a)=>{
-                val result = res:::links(currentNode).map(_.dest.id)--firstDegreeRepos
-                innerLoop(newLinkToVisit(0).dest,newLinkToVisit,newNodeVisited,result)
+                case UserNode(a)=>{
+                  innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
+                }
+                case RepoNode(b)=>
+                innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res)
               }
-              case RepoNode(b)=>
-              innerLoop(newLinkToVisit(0).dest,newLinkToVisit,newNodeVisited,res)
             }
           }
         }
-        innerLoop(userNode, Nil,Nil,Nil).take(10)
+        innerLoop(userNode, TreeSet(),Nil,Nil).removeDuplicates
       }
     }
 
-    def getFirstBestRepos():List[Int]={
+    def getFirstBestRepos():Set[Link]={
       def innerLoop(iter:Iterator[List[Link]],res:SortedSet[Link] ):SortedSet[Link]={
         if(iter.hasNext){
           val list = iter.next
@@ -82,7 +85,7 @@ trait GraphComponent{
         }
       }else res
     }
-    innerLoop(links.values, TreeSet[Link](Link(0,RepoNode(0)))).toList.map(_.dest.id)
+    innerLoop(links.values, TreeSet[Link](Link(0,RepoNode(0))))
   }
 }
 
