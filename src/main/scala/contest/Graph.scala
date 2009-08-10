@@ -51,26 +51,24 @@ trait GraphComponent{
         def innerLoop(currentNode:Node,nextLinkToVisit:Set[Link], linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
         res.removeDuplicates
         res.sort(_<_)
-        if(res.size >10) res
-        else{
-          val newNodeVisited=currentNode::nodeVisited
-          val temp = linkToVisit++links(currentNode).filter(link=>(!newNodeVisited.contains(link.dest)))
+        val newNodeVisited=currentNode::nodeVisited
+        val temp = linkToVisit++links(currentNode).filter(link=>(!newNodeVisited.contains(link.dest)))
 
           val nextFiltered =  nextLinkToVisit.filter(link=>(!newNodeVisited.contains(link.dest)))
           val (newNextLinkToVisit,newLinkToVisit) = 
-                if(nextFiltered.size == 0) (temp,TreeSet[Link]())
-                else (nextFiltered,temp)
+          if(res.size >10) (nextFiltered,TreeSet[Link]())
+              else if(nextFiltered.size == 0) (temp,TreeSet[Link]())
+            else (nextFiltered,temp)
 
-          if(newNextLinkToVisit.size == 0) res
-          else{
-            val nextLink = newNextLinkToVisit.elements.next
-            currentNode match {
-              case UserNode(a)=>{
-                innerLoop(nextLink.dest,newNextLinkToVisit,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
-              }
-              case RepoNode(b)=>
-              innerLoop(nextLink.dest,newNextLinkToVisit,newLinkToVisit-nextLink,newNodeVisited,res)
+        if(newNextLinkToVisit.size == 0) res
+        else{
+          val nextLink = newNextLinkToVisit.elements.next
+          currentNode match {
+            case UserNode(a)=>{
+              innerLoop(nextLink.dest,newNextLinkToVisit,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
             }
+            case RepoNode(b)=>
+            innerLoop(nextLink.dest,newNextLinkToVisit,newLinkToVisit-nextLink,newNodeVisited,res)
           }
         }
       }
