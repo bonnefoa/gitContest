@@ -116,10 +116,6 @@ class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
   val graph=Initialise.initialiseGraph("thirdLink.txt")
     graph.getBestCandidates(1) should be (List(2,3))
 }
-it("should get the best repos"){
-  val graph=Initialise.initialiseGraph("dataTest2.txt")
-    graph.getBestCandidates(1) should be ((15 to 25).toList)
-}
 }
 }
 

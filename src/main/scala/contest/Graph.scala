@@ -42,29 +42,28 @@ trait GraphComponent{
         else res.map(_.dest.id).toList.takeRight(10)
     }
 
-    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).map(_.dest.id).toList }
+    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).sort(_>_).map(_.dest.id).toList.takeRight(10) }
 
     def getBestCandidates(userNode:UserNode):List[Link]={
       if(!links.isDefinedAt(userNode)) Nil
-        else{
+      else{
         val firstDegreeRepos=links(userNode)
           def innerLoop(currentNode:Node,linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
           res.removeDuplicates
           res.sort(_<_)
-          if(res.size >10) res
+          val newNodeVisited=currentNode::nodeVisited
+          val newLinkToVisit= if(res.size <10) (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
+            else linkToVisit
+
+          if(newLinkToVisit.size == 0) res
           else{
-            val newNodeVisited=currentNode::nodeVisited
-            val newLinkToVisit= (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
-              if(newLinkToVisit.size == 0) res
-            else{
-              val nextLink = newLinkToVisit.elements.next
-              currentNode match {
-                case UserNode(a)=>{
-                  innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
-                }
-                case RepoNode(b)=>
-                innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res)
+            val nextLink = newLinkToVisit.elements.next
+            currentNode match {
+              case UserNode(a)=>{
+                innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
               }
+              case RepoNode(b)=>
+              innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res)
             }
           }
         }
