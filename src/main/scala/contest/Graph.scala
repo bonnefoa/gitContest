@@ -42,7 +42,7 @@ trait GraphComponent{
         else res.map(_.dest.id).toList.takeRight(10)
     }
 
-    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).map(_.dest.id).toList }
+    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).sort(_>_).map(_.dest.id).toList.takeRight(10) }
 
     def getBestCandidatesV2(userNode:UserNode):List[Link]
     if(!links.isDefinedAt(userNode)) Nil
@@ -86,16 +86,16 @@ trait GraphComponent{
 
   def getBestCandidates(userNode:UserNode):List[Link]={
     if(!links.isDefinedAt(userNode)) Nil
-    else{
+        else{
       val firstDegreeRepos=links(userNode)
         def innerLoop(currentNode:Node,linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
         res.removeDuplicates
         res.sort(_<_)
-        if(res.size >10) res
-        else{
           val newNodeVisited=currentNode::nodeVisited
-          val newLinkToVisit= (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
-            if(newLinkToVisit.size == 0) res
+          val newLinkToVisit= if(res.size <10) (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
+            else linkToVisit
+
+          if(newLinkToVisit.size == 0) res
           else{
             val nextLink = newLinkToVisit.elements.next
             currentNode match {
@@ -107,7 +107,6 @@ trait GraphComponent{
             }
           }
         }
-      }
       innerLoop(userNode, TreeSet(),Nil,Nil).removeDuplicates
     }
   }
