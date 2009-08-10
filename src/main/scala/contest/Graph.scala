@@ -44,35 +44,30 @@ trait GraphComponent{
 
     def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).sort(_>_).map(_.dest.id).toList.takeRight(10) }
 
-    def getBestCandidates(userNode:UserNode):List[Link]={
+  def getBestCandidates(userNode:UserNode):List[Link]={
     if(!links.isDefinedAt(userNode)) Nil
-    else{
+        else{
       val firstDegreeRepos=links(userNode)
-        def innerLoop(currentNode:Node,nextLinkToVisit:Set[Link], linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
+        def innerLoop(currentNode:Node,linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
         res.removeDuplicates
         res.sort(_<_)
-        val newNodeVisited=currentNode::nodeVisited
-        val temp = linkToVisit++links(currentNode).filter(link=>(!newNodeVisited.contains(link.dest)))
+          val newNodeVisited=currentNode::nodeVisited
+          val newLinkToVisit= if(res.size <10) (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
+            else linkToVisit
 
-          val nextFiltered =  nextLinkToVisit.filter(link=>(!newNodeVisited.contains(link.dest)))
-          val (newNextLinkToVisit,newLinkToVisit) = 
-          if(res.size >10) (nextFiltered,TreeSet[Link]())
-              else if(nextFiltered.size == 0) (temp,TreeSet[Link]())
-            else (nextFiltered,temp)
-
-        if(newNextLinkToVisit.size == 0) res
-        else{
-          val nextLink = newNextLinkToVisit.elements.next
-          currentNode match {
-            case UserNode(a)=>{
-              innerLoop(nextLink.dest,newNextLinkToVisit,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
+          if(newLinkToVisit.size == 0) res
+          else{
+            val nextLink = newLinkToVisit.elements.next
+            currentNode match {
+              case UserNode(a)=>{
+                innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
+              }
+              case RepoNode(b)=>
+              innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res)
             }
-            case RepoNode(b)=>
-            innerLoop(nextLink.dest,newNextLinkToVisit,newLinkToVisit-nextLink,newNodeVisited,res)
           }
         }
-      }
-      innerLoop(userNode, TreeSet(),TreeSet(),Nil,Nil).removeDuplicates
+      innerLoop(userNode, TreeSet(),Nil,Nil).removeDuplicates
     }
   }
 
@@ -92,6 +87,7 @@ trait GraphComponent{
   innerLoop(links.values, TreeSet[Link](Link(0,RepoNode(0))))
 }
 }
+
 object Initialise{
 
   def parseDataToGraph(iter:Iterator[Data],links:NodeGraph):NodeGraph={
@@ -150,5 +146,6 @@ def initialiseGraph(file:String):Graph={
           )))))
       }
     }
+
 
   }
