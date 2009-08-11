@@ -32,8 +32,7 @@ trait ResultWriterComponent{
       Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(testFile)).getLines.foreach{
         string=>{
           val userId= string.stripLineEnd
-          //val line=userId+graph.getBestCandidatesOrElse10Top(userId.toInt).mkString(":",",","")
-          val line=userId+graph.getBestCandidates(userId.toInt).mkString(":",",","")
+          val line=userId+graph.getBestCandidatesOrElse10Top(userId.toInt).mkString(":",",","")
             println(line)
           out.write(line)
           out.newLine
