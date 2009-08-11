@@ -36,28 +36,27 @@ trait GraphComponent{
     lazy val tenBestRepo = getFirstBestRepos 
 
     def getBestCandidatesOrElse10Top(userId:Int):List[Int]={
-      val res = getBestCandidates(UserNode(userId))
+      val res = getBestCandidates(UserNode(userId),30)
         if (res.size==0) tenBestRepo.map(_.dest.id).toList
       else if(res.size < 10) (res++tenBestRepo).map(_.dest.id).toList.takeRight(10)
         else res.map(_.dest.id).toList.takeRight(10)
     }
 
-    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).sort(_>_).map(_.dest.id).toList.takeRight(10) }
+  def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId),20).sort(_>_).map(_.dest.id).toList.takeRight(10) }
 
-  def getBestCandidates(userNode:UserNode):List[Link]={
+  def getBestCandidates(userNode:UserNode, max:Int):List[Link]={
     if(!links.isDefinedAt(userNode)) Nil
         else{
       val firstDegreeRepos=links(userNode)
         def innerLoop(currentNode:Node,linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
-        res.removeDuplicates
-        res.sort(_<_)
+        if(res.size >max)res 
+        else{
           val newNodeVisited=currentNode::nodeVisited
-          val newLinkToVisit= if(res.size <10) (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
-            else linkToVisit
-
+          val newLinkToVisit=  (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
           if(newLinkToVisit.size == 0) res
           else{
-            val nextLink = newLinkToVisit.elements.next
+//            val nextLink = newLinkToVisit.elements.next
+                val nextLink = newLinkToVisit.toStream.last
             currentNode match {
               case UserNode(a)=>{
                 innerLoop(nextLink.dest,newLinkToVisit-nextLink,newNodeVisited,res:::links(currentNode)--firstDegreeRepos)
@@ -67,6 +66,7 @@ trait GraphComponent{
             }
           }
         }
+      }
       innerLoop(userNode, TreeSet(),Nil,Nil).removeDuplicates
     }
   }
