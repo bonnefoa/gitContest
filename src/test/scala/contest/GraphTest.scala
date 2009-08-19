@@ -31,102 +31,124 @@ import scala.collection.immutable.HashMap
 import scala.collection.immutable.IntMap
 
 
-class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
+class LangTest extends Spec with ShouldMatchers with TestEnvironnement{
 
-  describe("A treeSet of links"){
-    it("should have the higher score to the right"){
-      TreeSet(Link(1,repo1),Link(14,repo2),Link(5,repo3)).toList should be (List(Link(14,repo2),Link(5,repo3),Link(1,repo1)).reverse)
+  describe("The lang algorithme "){
+    it("should find 1000 lines from Lang"){
+      Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500)).getTotalLines should be(1000)
     }
+    it("should find correct percent"){
+      Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500)).getMapWithPercent should be(
+        Map("Java"->40,"Groovy"->10,"Scala"->50)
+      )
   }
-  describe("The Graph initializer"){
-    it("should parse the graph the graph"){ 
-      val map = Initialise.parseDataToGraph(Initialise.readFile("dataTest.txt"),HashMap())
+  it("should find the correct affinity beetween 2 repos"){
+    val lang1= Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500))
+      val lang2= Lang(2,Map("Java"->300,"Groovy"->200,"Scala"->500))
+      lang1.getAffinity(lang2) should be( 20 )
+  }
+  it("should sort list link with lang affinity"){
+    val lang1= Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500))
+      val lang2= Lang(2,Map("Java"->300,"Groovy"->200,"Scala"->500))
+      lang1.getAffinity(lang2) should be(20)
+  }
+}
+  }
+  class GraphTest extends Spec with ShouldMatchers with TestEnvironnement{
+    describe("A treeSet of links"){
+      it("should have the higher score to the right"){
+        TreeSet(Link(1,repo1),Link(14,repo2),Link(5,repo3)).toList should be (List(Link(14,repo2),Link(5,repo3),Link(1,repo1)).reverse)
+      }
+    }
+    describe("The Graph initializer"){
+      it("should parse the graph the graph"){ 
+        val map = Initialise.parseDataToGraph(Initialise.readFile("dataTest.txt"),HashMap())
+          map should contain value (List(Link(1,repo2),Link(1,repo1)))
         map should contain value (List(Link(1,repo2),Link(1,repo1)))
-      map should contain value (List(Link(1,repo2),Link(1,repo1)))
-      map should contain value (List(Link(1,user1)))
-      map should contain value (List(Link(1,user2),Link(1,user1)))
-      map should contain value (List(Link(1,repo2)))
-    }
-    it("should score the user1 list of link correctly"){
-      val listLinkScored = Initialise.scoreLinks(user1,mapRef)
-        listLinkScored should contain (Link(3,repo2))
-      listLinkScored should contain (Link(2,repo1))
-    }
+        map should contain value (List(Link(1,user1)))
+        map should contain value (List(Link(1,user2),Link(1,user1)))
+        map should contain value (List(Link(1,repo2)))
+      }
+      it("should score the user1 list of link correctly"){
+        val listLinkScored = Initialise.scoreLinks(user1,mapRef)
+          listLinkScored should contain (Link(3,repo2))
+        listLinkScored should contain (Link(2,repo1))
+      }
 
-    it("should score the user2 list of link correctly"){
-      val listLinkScored = Initialise.scoreLinks(user2,mapRef)
-        listLinkScored should contain (Link(3,repo2))
-    }
+      it("should score the user2 list of link correctly"){
+        val listLinkScored = Initialise.scoreLinks(user2,mapRef)
+          listLinkScored should contain (Link(3,repo2))
+      }
 
-    it("should score the repo1 list of link correctly"){
-      val listLinkScored = Initialise.scoreLinks(repo1,mapRef)
-        listLinkScored should contain (Link(3,user1))
-    }
+      it("should score the repo1 list of link correctly"){
+        val listLinkScored = Initialise.scoreLinks(repo1,mapRef)
+          listLinkScored should contain (Link(3,user1))
+      }
 
-    it("should score the map"){
-      val mapScored=Initialise.scoreGraph(mapRef)
-        mapScored should contain value (List(Link(3,repo2),Link(2,repo1)))
-      mapScored should contain value (List(Link(3,user1)))
-      mapScored should contain value (List(Link(3,user1),Link(2,user2)))
-      mapScored should contain value (List(Link(3,repo2)))
-    }
-    it("should sort the map"){
-      val mapSortedAndScored = Initialise.sortLinks(littleMap)
-        mapSortedAndScored should contain value (List(Link(3,repo2),Link(40,repo1),Link(1,repo1)).sort(_>_))
-    }
-    it("should remove useless links"){
-      val mapPurged = Initialise.removeUselessLinks(HashMap(user1-> List.range(1, 20).map(Link(_,repo1))))
-        mapPurged should contain value( List.range(1, 11).map(Link(_,repo1)) )
-    }
-    it("should get the 10 best repos"){
-      val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2+1,RepoNode(a*2+1))))
-        val grap = new Graph(Initialise.sortLinks(map))
-        val res = grap.getFirstBestRepos().map(_.dest.id).toList
-      res should be((90 to 99).toList.reverse)
-    }
-    it("should not duplicate the best repos"){
-      val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))))
-        val grap = new Graph(Initialise.sortLinks(map))
-        val res = grap.getFirstBestRepos().map(_.dest.id).toList
-      res should be ( (80 to 98 by 2).toList.reverse )
+      it("should score the map"){
+        val mapScored=Initialise.scoreGraph(mapRef)
+          mapScored should contain value (List(Link(3,repo2),Link(2,repo1)))
+        mapScored should contain value (List(Link(3,user1)))
+        mapScored should contain value (List(Link(3,user1),Link(2,user2)))
+        mapScored should contain value (List(Link(3,repo2)))
+      }
+      it("should sort the map"){
+        val mapSortedAndScored = Initialise.sortLinks(littleMap)
+          mapSortedAndScored should contain value (List(Link(3,repo2),Link(40,repo1),Link(1,repo1)).sort(_>_))
+      }
+      it("should remove useless links"){
+        val mapPurged = Initialise.removeUselessLinks(HashMap(user1-> List.range(1, 20).map(Link(_,repo1))))
+          mapPurged should contain value( List.range(1, 11).map(Link(_,repo1)) )
+      }
+      it("should get the 10 best repos"){
+        val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2+1,RepoNode(a*2+1))))
+          val grap = new Graph(Initialise.sortLinks(map))
+          val res = grap.getFirstBestRepos().map(_.dest.id).toList
+        res should be((90 to 99).toList.reverse)
+      }
+      it("should not duplicate the best repos"){
+        val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))),user2->List.range(1,50).map(a=>Link(a*2,RepoNode(a*2))))
+          val grap = new Graph(Initialise.sortLinks(map))
+          val res = grap.getFirstBestRepos().map(_.dest.id).toList
+        res should be ( (80 to 98 by 2).toList.reverse )
 
+      }
+      it("should get the repo id and not the score"){
+        val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a))))
+          val grap = new Graph(Initialise.sortLinks(map))
+          val res = grap.getFirstBestRepos().map(_.dest.id).toList
+        res should be ( (40 to 49).toList.reverse)
+      }
     }
-    it("should get the repo id and not the score"){
-      val map = HashMap[Node,List[Link]](user1 -> List.range(1,50).map(a=>Link(a*2,RepoNode(a))))
-        val grap = new Graph(Initialise.sortLinks(map))
-        val res = grap.getFirstBestRepos().map(_.dest.id).toList
-      res should be ( (40 to 49).toList.reverse)
+    describe("Search the best candidates algorithm"){
+      it("should find nothing if there is only first degree repos"){
+        val mapRef = HashMap[Node,List[Link]](
+          user1->List(Link(1,repo1),Link(1,repo2)),
+          repo1->List(Link(2,user1)),
+          repo2->List(Link(2,user1))
+        )
+      val graph= new Graph(mapRef)
+        graph.getBestCandidates(1) should be (Nil)
     }
-  }
-  describe("Search the best candidates algorithm"){
-    it("should find nothing if there is only first degree repos"){
+    it("should find the repo on second degree"){
       val mapRef = HashMap[Node,List[Link]](
-        user1->List(Link(1,repo1),Link(1,repo2)),
-        repo1->List(Link(2,user1)),
-        repo2->List(Link(2,user1))
+        user1->List(Link(2,repo1)),
+        user2->List(Link(2,repo1),Link(1,repo2)),
+        repo1->List(Link(1,user1),Link(2,user2)),
+        repo2->List(Link(2,user2))
       )
     val graph= new Graph(mapRef)
-      graph.getBestCandidates(1) should be (Nil)
+      graph.getBestCandidates(1) should be (List(2))
   }
-  it("should find the repo on second degree"){
-    val mapRef = HashMap[Node,List[Link]](
-      user1->List(Link(2,repo1)),
-      user2->List(Link(2,repo1),Link(1,repo2)),
-      repo1->List(Link(1,user1),Link(2,user2)),
-      repo2->List(Link(2,user2))
-    )
-  val graph= new Graph(mapRef)
-    graph.getBestCandidates(1) should be (List(2))
-}
 
-it("should find the repo on the third link"){
-  val graph=Initialise.initialiseGraph("thirdLink.txt")
-    graph.getBestCandidates(1) should be (List(2,3))
-}
-it("should find repos in the right order from dataset3"){
-  val graph=Initialise.initialiseGraph("dataTest3.txt")
-    graph.getBestCandidates(1).sort(_<_) should be ((2 to 11).toList)
-}
+  it("should find the repo on the third link"){
+    val graph=Initialise.initialiseGraph("thirdLink.txt")
+      graph.getBestCandidates(1) should be (List(2,3))
+  }
+  it("should find repos in the right order from dataset3"){
+    val graph=Initialise.initialiseGraph("dataTest3.txt")
+      graph.getBestCandidates(1).sort(_<_) should be ((2 to 11).toList)
+  }
 }
 }
 

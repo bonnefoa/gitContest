@@ -31,27 +31,28 @@ trait GraphComponent{
   val graph:Graph
   type NodeGraph =Map[Node,List[Link]]
 
-  case class Graph(links:NodeGraph){
+  case class Graph(links:NodeGraph,val mapLang:Map[Node,Lang] ){
 
-    lazy val tenBestRepo = getFirstBestRepos 
+//    lazy val tenBestRepo = getFirstBestRepos 
 
-    def getBestCandidatesOrElse10Top(userId:Int):List[Int]={
-      val res = getBestCandidates(UserNode(userId))
-        if (res.size==0) tenBestRepo.map(_.dest.id).toList
-      else if(res.size < 10) (res++tenBestRepo).map(_.dest.id).toList.takeRight(10)
-        else res.map(_.dest.id).toList.takeRight(10)
-    }
+//    lazy val mapLang = Initialise.parseLang("lang.txt")
 
-    def getBestCandidates(userId:Int):List[Int]={ getBestCandidates(UserNode(userId)).map(_.dest.id).toList.take(10) }
+//    def getBestCandidatesOrElse10Top(userId:Int):List[Int]={
+//      val res = getBestCandidates(UserNode(userId))
+//        if (res.size==0) tenBestRepo.map(_.dest.id).toList
+//      else if(res.size < 10) (res++tenBestRepo).map(_.dest.id).toList.takeRight(10)
+//        else res.map(_.dest.id).toList.takeRight(10)
+//    }
 
-    def getBestCandidates(userNode:UserNode):List[Link]={
+    def getBestCandidates(userId:Int):List[Int]={ getBestCandidatesByScore(UserNode(userId)).map(_.dest.id).toList.take(10) }
+
+    def getBestCandidatesByScore(userNode:UserNode):List[Link]={
       if(!links.isDefinedAt(userNode)) Nil
-        else{
+      else{
         val firstDegreeRepos=links(userNode)
           def innerLoop(currentNode:Node,linkToVisit:Set[Link],nodeVisited:List[Node],res:List[Link]):List[Link]={
           val newRes = res.removeDuplicates.sort(_>_)
-          println (newRes)
-          if(newRes.size >10) newRes
+            if(newRes.size >10) newRes
           else{
             val newNodeVisited=currentNode::nodeVisited
             val newLinkToVisit= (linkToVisit++links(currentNode)).filter(link=>(!newNodeVisited.contains(link.dest)))
@@ -72,21 +73,53 @@ trait GraphComponent{
       }
     }
 
-    def getFirstBestRepos():Set[Link]={
-      def innerLoop(iter:Iterator[List[Link]],res:SortedSet[Link] ):SortedSet[Link]={
+    def sortListWithLangAffinity(userNode:UserNode,linksToSort:List[Link]):List[Link]={
+      val refLang =  mapLang(userNode)
+        linksToSort.sort( (link1, link2)=> 
+        refLang.getAffinity(mapLang(link1.dest)) < refLang.getAffinity(mapLang(link2.dest)) 
+      )
+  }
+  /*
+  def getBestCandidatesByLanguages(userNode:UserNode,linksToSort:List[Link])={
+    def percentMap():Map[String,Int]={
+      val repos = links(userNode)
+        val tot = repos.foldLeft(0)((b,a)=> b+mapLang(a.dest).getTotalLines)
+        def innerLoop(iter:Iterator[Link] ,res:Map[String,Int]):Map[String,Int]={
         if(iter.hasNext){
-          val list = iter.next
-          val head = res.firstKey
-          if(head > list(0)) innerLoop(iter,res)
-            else{
-            innerLoop(iter,
-              TreeSet[Link]()++(res++list.takeWhile(_ > head)).toList.takeRight(10)
-            )
-        }
+          mapLang(iter.next.dest).languages.map(
+            innerLoop(iter,newRes)
+          )
       }else res
     }
-    innerLoop(links.values, TreeSet[Link](Link(0,RepoNode(0))))
+    innerLoop(linksToSort.elements,Map())
   }
+
+  def scoreLinks(iter:Iterator[Link],res:List[Link]):List[Link]={
+    if(iter.hasNext){
+      val repo = iter.next.dest
+      val lang = mapLang(repo)
+        scoreLinks(iter,res:::Link(repo,1))
+    }else res
+  }
+  Nil
+}
+*/
+
+def getFirstBestRepos():Set[Link]={
+  def innerLoop(iter:Iterator[List[Link]],res:SortedSet[Link] ):SortedSet[Link]={
+    if(iter.hasNext){
+      val list = iter.next
+      val head = res.firstKey
+      if(head > list(0)) innerLoop(iter,res)
+        else{
+        innerLoop(iter,
+          TreeSet[Link]()++(res++list.takeWhile(_ > head)).toList.takeRight(10)
+        )
+    }
+  }else res
+}
+innerLoop(links.values, TreeSet[Link](Link(0,RepoNode(0))))
+}
 }
 
 object Initialise{
@@ -105,48 +138,52 @@ object Initialise{
         )
     )
 }else links
-}
+       }
 
-def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={
-  def innerLoop(iter:Iterator[Node],links:NodeGraph):NodeGraph={
-    if(iter.hasNext){
-      val node = iter.next
-      innerLoop(iter,f(node,links))
-    }
-    else links
-  }
-  innerLoop(links.keys,links)
-}
+       def parseLang(file:String):Map[Node,Lang]={
+         LangParser.readFile(file).foldLeft(Map[Node,Lang]())((map,lang)=> map++Map(RepoNode(lang.repoId)->lang))
+       }
 
-def sortLinks(links:NodeGraph):NodeGraph={
-  applyToMap(links, (node,links)=> links.update(node,links(node).sort(_>_)))
-}
+       def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={
+         def innerLoop(iter:Iterator[Node],links:NodeGraph):NodeGraph={
+           if(iter.hasNext){
+             val node = iter.next
+             innerLoop(iter,f(node,links))
+           }
+           else links
+         }
+         innerLoop(links.keys,links)
+       }
 
-def removeUselessLinks(links:NodeGraph):NodeGraph={
-  applyToMap(links, (node,links)=> links.update(node,links(node).take(10)))
-}
+       def sortLinks(links:NodeGraph):NodeGraph={
+         applyToMap(links, (node,links)=> links.update(node,links(node).sort(_>_)))
+       }
 
-def scoreGraph(links:NodeGraph):NodeGraph={
-  applyToMap(links,(node,links)=> links.update(node,scoreLinks(node,links)))
-}
+       def removeUselessLinks(links:NodeGraph):NodeGraph={
+         applyToMap(links, (node,links)=> links.update(node,links(node).take(10)))
+       }
 
-def scoreLinks(node:Node,map:NodeGraph):List[Link]={
-  map(node).flatMap(link=> Link(map(link.dest).size+link.score,link.dest) ::Nil)
-}
+       def scoreGraph(links:NodeGraph):NodeGraph={
+         applyToMap(links,(node,links)=> links.update(node,scoreLinks(node,links)))
+       }
 
-def readFile(file:String):Iterator[Data]={
-  DataParser.readFile(file).elements
-}
+       def scoreLinks(node:Node,map:NodeGraph):List[Link]={
+         map(node).flatMap(link=> Link(map(link.dest).size+link.score,link.dest) ::Nil)
+       }
 
-def initialiseGraph(file:String):Graph={
-  new Graph(
-    sortLinks(
-      removeUselessLinks(
-        scoreGraph(
-          parseDataToGraph(readFile(file), HashMap()
-          )))))
-      }
-    }
+       def readFile(file:String):Iterator[Data]={
+         DataParser.readFile(file).elements
+       }
+
+       def initialiseGraph(file:String):Graph={
+         new Graph(
+           sortLinks(
+             removeUselessLinks(
+               scoreGraph(
+                 parseDataToGraph(readFile(file), HashMap()
+                 )))))
+             }
+           }
 
 
-  }
+         }

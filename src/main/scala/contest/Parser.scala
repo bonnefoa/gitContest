@@ -75,20 +75,20 @@ object RepoParser extends MyParser[Repo]{
     //    case repoId~":"~repoName~","~date~","~parentId => new Repo(repoId.toInt, repoName, date,parentId)
   }
 }
-                                                                                                                                                    }
 
-                                                                                                                                                    object LangParser extends MyParser[Lang]{
-                                                                                                                                                      def langWithLine:Parser[(String,Int)]=
-                                                                                                                                                        ident~";"~wholeNumber ^^ {
-                                                                                                                                                        case langId~";"~numLine => (langId,numLine.toInt)
-                                                                                                                                                      }
+ }
+ object LangParser extends MyParser[Lang]{ 
+   def langWithLine:Parser[(String,Int)]=
+     ident~";"~wholeNumber ^^ {
+     case langId~";"~numLine => (langId,numLine.toInt)
+   }
 
-                                                                                                                                                      def languageMap : Parser[Map[String,Int]]=
-                                                                                                                                                        repsep(langWithLine,",") ^^ (Map() ++ _) 
+   def languageMap : Parser[Map[String,Int]]=
+     repsep(langWithLine,",") ^^ (Map() ++ _) 
 
-                                                                                                                                                      def line: Parser[Lang]=
-                                                                                                                                                        wholeNumber~":"~languageMap ^^ {
-                                                                                                                                                        case repoId~":"~mapLang => new Lang(repoId.toInt,mapLang)
-                                                                                                                                                      }
-                                                                                                                                                    }
+   def line: Parser[Lang]=
+     wholeNumber~":"~languageMap ^^ {
+     case repoId~":"~mapLang => new Lang(repoId.toInt,mapLang)
+   }
+ }
 
