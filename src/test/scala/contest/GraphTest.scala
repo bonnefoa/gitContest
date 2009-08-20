@@ -31,26 +31,23 @@ import scala.collection.immutable.HashMap
 import scala.collection.immutable.IntMap
 
 
-class LangTest extends Spec with ShouldMatchers with TestEnvironnement{
+class LangTest extends Spec with ShouldMatchers with TestEnvironnement3{
 
   describe("The lang algorithme "){
     it("should find 1000 lines from Lang"){
-      Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500)).getTotalLines should be(1000)
+      Lang(RepoNode(1),Map("Java"->400,"Groovy"->100,"Scala"->500)).getTotalLines should be(1000)
     }
     it("should find correct percent"){
-      Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500)).getMapWithPercent should be(
+      Lang(RepoNode(1),Map("Java"->400,"Groovy"->100,"Scala"->500)).getMapWithPercent should be(
         Map("Java"->40,"Groovy"->10,"Scala"->50)
       )
   }
-  it("should find the correct affinity beetween 2 repos"){
-    val lang1= Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500))
-      val lang2= Lang(2,Map("Java"->300,"Groovy"->200,"Scala"->500))
-      lang1.getAffinity(lang2) should be( 20 )
+
+  it("should get the percent of all repo of a user"){
+//        graph.     
   }
+
   it("should sort list link with lang affinity"){
-    val lang1= Lang(1,Map("Java"->400,"Groovy"->100,"Scala"->500))
-      val lang2= Lang(2,Map("Java"->300,"Groovy"->200,"Scala"->500))
-      lang1.getAffinity(lang2) should be(20)
   }
 }
   }
@@ -150,6 +147,12 @@ class LangTest extends Spec with ShouldMatchers with TestEnvironnement{
       graph.getBestCandidates(1).sort(_<_) should be ((2 to 11).toList)
   }
 }
+}
+trait TestEnvironnement3 extends GraphComponent{
+  val graph=new Graph(
+        Initialise.parseDataToGraph(Initialise.readFile("dataTest4.txt"),HashMap()),
+        Initialise.parseLang("langDataTest4.txt")
+      )
 }
 
 trait TestEnvironnement extends GraphComponent{

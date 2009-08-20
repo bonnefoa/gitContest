@@ -22,6 +22,8 @@ abstract case class Node(id:Int)
 case class RepoNode(idRepo:Int) extends Node(idRepo)
 case class UserNode(idUser:Int)  extends Node(idUser)
 
+
+
 case class Link (var score:Int,dest:Node) extends Ordered[Link]{
   def compare( that:Link)= (this.score - that.score)
   }
@@ -34,7 +36,7 @@ case class Data(dataId:Int,repoId:Int)extends Entite(dataId)
 case class Repo(repoId:Int, name:String, date:Date,parentId:Int) extends Entite(repoId){
   def this(repoId:Int, name:String, date:Date)= this(repoId,name,date,0)
   }
-case class Lang(repoId:Int,languages: Map[String,Int])  extends Entite(repoId){
+case class Lang(node:Node,languages: Map[String,Int])  extends Entite(node.id){
 
   def getTotalLines():Int={
     languages.values.foldLeft(0)(_+_)
@@ -42,7 +44,6 @@ case class Lang(repoId:Int,languages: Map[String,Int])  extends Entite(repoId){
 
   def getMapWithPercent():Map[String,Int]={
     val tot = getTotalLines
-    //        languages.flatMap(a=>Map(a._1->a._2*100/tot))
     languages.foldLeft(Map[String,Int]())((a,b)=>a++ Map(b._1 -> b._2*100/tot))
   }
 

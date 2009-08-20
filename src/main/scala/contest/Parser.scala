@@ -88,7 +88,7 @@ object RepoParser extends MyParser[Repo]{
 
    def line: Parser[Lang]=
      wholeNumber~":"~languageMap ^^ {
-     case repoId~":"~mapLang => new Lang(repoId.toInt,mapLang)
+     case repoId~":"~mapLang => new Lang(RepoNode(repoId.toInt),mapLang)
    }
  }
 
