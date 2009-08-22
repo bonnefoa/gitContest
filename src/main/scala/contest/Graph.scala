@@ -48,6 +48,12 @@ trait GraphComponent{
         getBestCandidatesByScore(UserNode(userId)).map(_.dest.id).toList.take(10)
       }
 
+      def getBestCandidatesByScoreAndByLanguages(userId:Int):List[Int]={
+        val userNode=UserNode(userId)
+        val res = getBestCandidatesByScore(userNode).removeDuplicates.take(20)
+        Initialise.scoreListWithLangAffinity(userNode,res)(mapLang).sort(_<_).map(_.dest.id).toList.take(10)
+      }
+
       def getBestCandidatesByScore(userNode:UserNode):List[Link]={
         if(!links.isDefinedAt(userNode)) Nil
         else{
@@ -114,8 +120,34 @@ def parseLang(file:String):Map[Node,Lang]={
   LangParser.readFile(file).foldLeft(Map[Node,Lang]())((map,lang)=> map++Map(lang.node->lang))
 }
 
-def processLangToFillUserNode(map:Map[Node,Lang]):Map[Node,Lang]={
+def sumListMap(listMap: List[Map[String,Int]]):Map[String,Int]={
+  listMap.foldLeft(Map[String,Int]())(
+    (map,current)=> 
+    current.keys.foldLeft(map)((map,key)=>
+      map.get(key) match { 
+        case None => map.update(key, current(key)); 
+        case Some(oldvalue) => map.update(key, oldvalue+current(key)) 
+      }
+    )
+)
+}
 
+def processMapLangToPercent(map:Map[Node,Lang]):Map[Node,Lang]={
+  map.foldLeft(Map[Node,Lang]())((res,current)=>
+        res.update(current._1,current._2.getLangWithPercent)
+        )
+}
+
+def processLangToFillUserNode(links:Map[Node,List[Link]],map:Map[Node,Lang]):Map[Node,Lang]={
+  val linksWithUserNode = links.filter(key=> key._1 match {
+      case a:UserNode =>true
+      case _ => false
+    })
+  linksWithUserNode.foldLeft(map)((res,current)=>{
+      val listMap = current._2.foldLeft(List[Map[String,Int]]())((listRes,cur)=>map(cur.dest).languages::listRes)
+        res.update(current._1,new Lang(current._1,sumListMap(listMap)))
+      }
+  )
 }
 
 def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={
@@ -164,17 +196,15 @@ def initialiseGraph(fileData:String):Graph={
       )
   }
   def initialiseGraph(fileData:String,fileLang:String):Graph={
-    new Graph(
+    val links=parseDataToGraph(readFile(fileData), HashMap())
+      new Graph(
       sortLinks(
         removeUselessLinks(
-          scoreGraph(
-            parseDataToGraph(readFile(fileData), HashMap()
-            ))))
-          ,
-          parseLang(fileLang)
-        )
-    }
+          scoreGraph(links
+          )))
+        ,
+        processLangToFillUserNode(links,parseLang(fileLang))
+      )
   }
-
-
 }
+    }

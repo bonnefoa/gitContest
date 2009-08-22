@@ -47,6 +47,10 @@ case class Lang(node:Node,languages: Map[String,Int])  extends Entite(node.id){
     languages.foldLeft(Map[String,Int]())((a,b)=>a++ Map(b._1 -> b._2*100/tot))
   }
 
+  def getLangWithPercent():Lang={
+        Lang(node,getMapWithPercent())
+  }
+
   def getAffinity(that:Lang):Int={
     val map1 = getMapWithPercent
     val map2 = that.getMapWithPercent

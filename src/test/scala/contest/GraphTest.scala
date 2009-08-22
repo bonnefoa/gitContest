@@ -42,12 +42,32 @@ class LangTest extends Spec with ShouldMatchers with TestEnvironnement3{
         Map("Java"->40,"Groovy"->10,"Scala"->50)
       )
   }
-
-  it("should get the percent of all repo of a user"){
-//        graph.     
+  it("should sum Map"){
+    val list = List(Map("a" -> 5, "b" -> 2), Map("a" -> 15, "c" -> 24))
+      val res=  Initialise.sumListMap(list)
+      res should be (Map("a"->20,"b"->2,"c"->24))
   }
-
+  it("should fill userNode"){
+    val map = Initialise.processLangToFillUserNode(graph.links,graph.mapLang)
+      map should contain value Lang(UserNode(1),Map("Java"->100,"Scala"->200))
+    map should contain value Lang(UserNode(2),Map("Java"->1414,"Scala"->2700))
+  }
+  it("should fill userNode with percent Lang"){
+    val map = Initialise.processMapLangToPercent(Initialise.processLangToFillUserNode(graph.links,graph.mapLang))
+      map should contain value Lang(UserNode(1),Map("Java"->33,"Scala"->66))
+    map should contain value Lang(UserNode(2),Map("Java"->34,"Scala"->65))
+  }
   it("should sort list link with lang affinity"){
+    val graph = Initialise.initialiseGraph("dataTest4.txt","langDataTest4.txt")
+      val userNode=UserNode(1)
+      val listLink = graph.getBestCandidatesByScore(userNode)
+      val gr = Initialise.scoreListWithLangAffinity(
+      userNode,listLink)(Initialise.processLangToFillUserNode(graph.links,graph.mapLang)).sort(_<_)
+    gr should be (List(Link(0,RepoNode(4)), Link(67,RepoNode(2)), Link(133,RepoNode(3)))) 
+  }
+  it("should get repo sorted with lang affinity"){
+    val graph = Initialise.initialiseGraph("dataTest4.txt","langDataTest4.txt")
+    graph.getBestCandidatesByScoreAndByLanguages(1) should be (List(4, 2, 3)) 
   }
 }
   }
@@ -150,9 +170,9 @@ class LangTest extends Spec with ShouldMatchers with TestEnvironnement3{
 }
 trait TestEnvironnement3 extends GraphComponent{
   val graph=new Graph(
-        Initialise.parseDataToGraph(Initialise.readFile("dataTest4.txt"),HashMap()),
-        Initialise.parseLang("langDataTest4.txt")
-      )
+    Initialise.parseDataToGraph(Initialise.readFile("dataTest4.txt"),HashMap()),
+    Initialise.parseLang("langDataTest4.txt")
+  )
 }
 
 trait TestEnvironnement extends GraphComponent{
