@@ -1,0 +1,4 @@
+1:C++;100,Scala;200
+2:Objective-C;500
+3:C Sharp;314
+4:Max/MSP;314
