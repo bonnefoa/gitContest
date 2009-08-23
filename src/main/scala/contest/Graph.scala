@@ -121,6 +121,7 @@ def parseLang(file:String):Map[Node,Lang]={
 }
 
 def sumListMap(listMap: List[Map[String,Int]]):Map[String,Int]={
+  println("ga")
   listMap.foldLeft(Map[String,Int]())(
     (map,current)=> 
     current.keys.foldLeft(map)((map,key)=>
@@ -139,17 +140,23 @@ def processMapLangToPercent(map:Map[Node,Lang]):Map[Node,Lang]={
 }
 
 def processLangToFillUserNode(links:Map[Node,List[Link]],map:Map[Node,Lang]):Map[Node,Lang]={
-  val linksWithUserNode = links.filter(key=> key._1 match {
+  links.elements.
+  /* filter(key=> key._1 match {
       case a:UserNode =>true
       case _ => false
-    })
-  linksWithUserNode.foldLeft(map)((res,current)=>{
-      val listMap = current._2.foldLeft(List[Map[String,Int]]())((listRes,cur)=>map(cur.dest).languages::listRes)
-        res.update(current._1,new Lang(current._1,sumListMap(listMap)))
+    }) 
+  */
+  foldLeft(map)((res,current)=>{
+      current._1 match {
+        case uNode:UserNode =>{
+          val listMap = current._2.foldLeft(List[Map[String,Int]]())((listRes,cur)=>map(cur.dest).languages::listRes)
+            res.update(current._1,new Lang(current._1,sumListMap(listMap)))
+        }
+        case _ =>res  
       }
-  )
 }
-
+    )
+}
 def applyToMap(links:NodeGraph,f:(Node, NodeGraph)=> NodeGraph):NodeGraph={
   def innerLoop(iter:Iterator[Node],links:NodeGraph):NodeGraph={
     if(iter.hasNext){

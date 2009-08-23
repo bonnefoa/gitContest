@@ -29,6 +29,9 @@ abstract class MyParser[T<:Entite] extends JavaTokenParsers{
     """[A-Za-z-_\.0-9]*\/[A-Za-z-_\.0-9]*""".r
   def aDate:Parser[String]=
     """[0-9]{4}-[0-9]{2}-[0-9]{2}""".r
+    def aLang:Parser[String]=
+    """[A-Za-z-_\-+ /\.0-9]*""".r
+
   def readFile(file:String):Stream[T] = {
     readFile(getClass.getClassLoader.getResourceAsStream(file))
   }
@@ -79,7 +82,7 @@ object RepoParser extends MyParser[Repo]{
  }
  object LangParser extends MyParser[Lang]{ 
    def langWithLine:Parser[(String,Int)]=
-     ident~";"~wholeNumber ^^ {
+     aLang~";"~wholeNumber ^^ {
      case langId~";"~numLine => (langId,numLine.toInt)
    }
 
